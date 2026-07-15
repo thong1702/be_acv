@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: acv
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
+  datasource:
+    # Thay đổi Host và Port thành của Railway
+    url: jdbc:mysql://turntable.proxy.rlwy.net:15993/db_acv
+    username: root
+    # Điền mật khẩu mà Railway đã cấp
+    password: ZXIPDUHrCKsLMqneDkZXmYEBOapAmWhi
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    database-platform: org.hibernate.dialect.MySQLDialect
