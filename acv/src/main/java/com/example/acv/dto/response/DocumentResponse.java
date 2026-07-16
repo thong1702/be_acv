@@ -14,6 +14,7 @@ public class DocumentResponse {
     private String fileUrl;
     private String fileType;
     private Long fileSize;
+    private String originalFileName;
     private String description;
     private LocalDate issuedDate;
     private Integer status;
@@ -27,7 +28,7 @@ public class DocumentResponse {
     private String publishDate;
 
     public DocumentResponse(Long id, String documentNumber, String title, String fileUrl, String fileType,
-                            Long fileSize, String description, LocalDate issuedDate, Integer status,
+                            Long fileSize, String originalFileName, String description, LocalDate issuedDate, Integer status,
                             Long uploadedById, String uploadedByUsername, LocalDateTime createdAt) {
         this.id = id;
         this.documentNumber = documentNumber;
@@ -35,6 +36,7 @@ public class DocumentResponse {
         this.fileUrl = fileUrl;
         this.fileType = fileType;
         this.fileSize = fileSize;
+        this.originalFileName = originalFileName;
         this.description = description;
         this.issuedDate = issuedDate;
         this.status = status;
