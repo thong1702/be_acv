@@ -33,6 +33,7 @@ public class CompanyInfo {
     private String companyName;
 
     @Lob
+    @Column(name = "introduction", columnDefinition = "TEXT")
     private String introduction;
 
     @Lob

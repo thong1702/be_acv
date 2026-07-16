@@ -36,6 +36,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.BAD_REQUEST, exception.getMessage(), request.getRequestURI(), null);
     }
 
+    @ExceptionHandler(AuthException.class)
+    ResponseEntity<ErrorResponse> handleAuth(AuthException exception,
+                                             HttpServletRequest request) {
+        return build(exception.getStatus(), exception.getMessage(), request.getRequestURI(), null);
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException exception,
                                                    HttpServletRequest request) {

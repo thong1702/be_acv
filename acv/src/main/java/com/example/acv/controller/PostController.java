@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class PostController {
 
     private final PostService postService;
+    private final com.example.acv.service.CloudinaryService cloudinaryService;
 
     @GetMapping
     public PageResponse<PostResponse> getPosts(
@@ -72,25 +73,10 @@ public class PostController {
     public ResponseEntity<java.util.Map<String, String>> uploadImage(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
         try {
-            String originalFilename = file.getOriginalFilename();
-            String fileExtension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String savedFilename = java.util.UUID.randomUUID().toString() + fileExtension;
-
-            java.io.File uploadDir = new java.io.File("uploads");
-            if (!uploadDir.exists()) {
-                uploadDir.mkdirs();
-            }
-
-            java.nio.file.Path filePath = java.nio.file.Paths.get("uploads", savedFilename);
-            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-
-            String imageUrl = "http://localhost:8080/api/posts/images/" + savedFilename;
+            String imageUrl = cloudinaryService.uploadImage(file);
             return ResponseEntity.ok(java.util.Map.of("url", imageUrl));
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Could not store image", e);
+            throw new RuntimeException("Could not store image on Cloudinary", e);
         }
     }
 

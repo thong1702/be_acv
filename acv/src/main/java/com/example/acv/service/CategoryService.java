@@ -8,10 +8,8 @@ import com.example.acv.entity.CategoryType;
 import com.example.acv.exception.DuplicateResourceException;
 import com.example.acv.exception.ResourceNotFoundException;
 import com.example.acv.repository.CategoryRepository;
-import java.text.Normalizer;
+import com.example.acv.util.SlugUtil;
 import java.util.List;
-import java.util.Locale;
-import java.util.regex.Pattern;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -26,9 +24,6 @@ import org.springframework.util.StringUtils;
 @Transactional
 public class CategoryService {
 
-    private static final Pattern NON_LATIN = Pattern.compile("[^\\w-]");
-    private static final Pattern WHITESPACE = Pattern.compile("[\\s_]+");
-
     private final CategoryRepository categoryRepository;
 
     @Transactional(readOnly = true)
@@ -40,18 +35,7 @@ public class CategoryService {
         } else {
             categoriesPage = categoryRepository.findAllByType(type, pageable);
         }
-
-        List<CategoryResponse> content = categoriesPage.getContent().stream()
-                .map(this::toResponse)
-                .toList();
-
-        return new PageResponse<>(
-                content,
-                categoriesPage.getTotalElements(),
-                categoriesPage.getTotalPages(),
-                categoriesPage.getSize(),
-                categoriesPage.getNumber()
-        );
+        return PageResponse.of(categoriesPage, this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -108,7 +92,7 @@ public class CategoryService {
 
     private String resolveSlug(String customSlug, String source, String currentSlug) {
         String slugSource = StringUtils.hasText(customSlug) ? customSlug : source;
-        String baseSlug = slugify(slugSource);
+        String baseSlug = SlugUtil.slugify(slugSource);
         if (currentSlug != null && currentSlug.equalsIgnoreCase(baseSlug)) {
             return currentSlug;
         }
@@ -118,15 +102,6 @@ public class CategoryService {
             slug = baseSlug + "-" + index++;
         }
         return slug;
-    }
-
-    private String slugify(String value) {
-        String normalized = Normalizer.normalize(value, Normalizer.Form.NFD)
-                .replaceAll("\\p{M}", "")
-                .toLowerCase(Locale.ROOT);
-        normalized = WHITESPACE.matcher(normalized).replaceAll("-");
-        normalized = NON_LATIN.matcher(normalized).replaceAll("");
-        return normalized.replaceAll("-{2,}", "-").replaceAll("^-|-$", "");
     }
 
     private CategoryResponse toResponse(Category category) {

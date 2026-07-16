@@ -32,18 +32,7 @@ public class UserService {
     public PageResponse<UserResponse> findAll(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Order.desc("createdAt")));
         Page<User> usersPage = userRepository.findAll(pageable);
-
-        List<UserResponse> content = usersPage.getContent().stream()
-                .map(this::toResponse)
-                .toList();
-
-        return new PageResponse<>(
-                content,
-                usersPage.getTotalElements(),
-                usersPage.getTotalPages(),
-                usersPage.getSize(),
-                usersPage.getNumber()
-        );
+        return PageResponse.of(usersPage, this::toResponse);
     }
 
     @Transactional(readOnly = true)

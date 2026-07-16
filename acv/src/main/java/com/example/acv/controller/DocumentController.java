@@ -3,6 +3,7 @@ package com.example.acv.controller;
 import com.example.acv.dto.request.DocumentRequest;
 import com.example.acv.dto.response.DocumentResponse;
 import com.example.acv.dto.response.PageResponse;
+import com.example.acv.dto.response.DocumentDownloadInfo;
 import com.example.acv.service.DocumentService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -35,51 +36,23 @@ public class DocumentController {
     }
 
     @GetMapping("/download/{id}")
-    public ResponseEntity<org.springframework.core.io.Resource> downloadFile(
+    public ResponseEntity<?> downloadFile(
             @PathVariable Long id,
             @RequestParam(value = "inline", defaultValue = "false") boolean inline) {
-        DocumentResponse doc = documentService.findById(id);
-        java.io.File file = new java.io.File("uploads", doc.getFileUrl()); // fileUrl stores the UUID filename
-        if (!file.exists()) {
-            return ResponseEntity.notFound().build();
-        }
+        DocumentDownloadInfo info = documentService.getDownloadInfo(id);
 
-        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
-        // Map short extension names to valid MIME types
-        String fileType = doc.getFileType();
-        String mimeType = "application/octet-stream";
-        String fileExtension = "";
-        
-        if (fileType != null) {
-            String upper = fileType.trim().toUpperCase();
-            if (upper.equals("PDF")) {
-                mimeType = "application/pdf";
-                fileExtension = ".pdf";
-            } else if (upper.equals("DOCX") || upper.equals("DOC")) {
-                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                fileExtension = upper.equals("DOCX") ? ".docx" : ".doc";
-            } else if (upper.equals("XLSX") || upper.equals("XLS")) {
-                mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                fileExtension = upper.equals("XLSX") ? ".xlsx" : ".xls";
-            } else if (upper.equals("PNG")) {
-                mimeType = "image/png";
-                fileExtension = ".png";
-            } else if (upper.equals("JPG") || upper.equals("JPEG")) {
-                mimeType = "image/jpeg";
-                fileExtension = upper.equals("JPG") ? ".jpg" : ".jpeg";
-            } else if (upper.contains("/")) {
-                mimeType = fileType;
-            }
+        if (info.getRedirectUrl() != null) {
+            return ResponseEntity.status(HttpStatus.FOUND)
+                    .location(java.net.URI.create(info.getRedirectUrl()))
+                    .build();
         }
 
         String disposition = inline ? "inline" : "attachment";
-
         return ResponseEntity.ok()
-                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, disposition + "; filename=\"" + doc.getTitle() + fileExtension + "\"")
-                .contentType(org.springframework.http.MediaType.parseMediaType(mimeType))
-                .contentLength(file.length())
-                .body(resource);
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION, disposition + "; filename=\"" + info.getFilename() + "\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType(info.getMimeType()))
+                .contentLength(info.getContentLength())
+                .body(info.getResource());
     }
 
     @GetMapping("/{id}")

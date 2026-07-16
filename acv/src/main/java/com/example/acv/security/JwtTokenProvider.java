@@ -37,12 +37,15 @@ public class JwtTokenProvider {
 
     private final SecretKey key;
     private final long jwtExpirationInMs;
+    private final long jwtRefreshExpirationInMs;
 
     public JwtTokenProvider(
             @Value("${app.jwt.secret:9a614bf3c990b793751ad88219488a0e8d0e7f7bb100c8b6a3b2b8c9d1e2f3a45a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a45a6b7c8d9e0f1a2b3c4d5e6f7}") String jwtSecret,
-            @Value("${app.jwt.expiration-ms:86400000}") long jwtExpirationInMs) {
+            @Value("${app.jwt.expiration-ms:86400000}") long jwtExpirationInMs,
+            @Value("${app.jwt.refresh-expiration-ms:604800000}") long jwtRefreshExpirationInMs) {
         this.key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
         this.jwtExpirationInMs = jwtExpirationInMs;
+        this.jwtRefreshExpirationInMs = jwtRefreshExpirationInMs;
     }
 
     public String generateToken(String username, String role) {
@@ -52,6 +55,18 @@ public class JwtTokenProvider {
         return Jwts.builder()
                 .subject(username)
                 .claim("role", role)
+                .issuedAt(now)
+                .expiration(expiryDate)
+                .signWith(key)
+                .compact();
+    }
+
+    public String generateRefreshToken(String username) {
+        Date now = new Date();
+        Date expiryDate = new Date(now.getTime() + jwtRefreshExpirationInMs);
+
+        return Jwts.builder()
+                .subject(username)
                 .issuedAt(now)
                 .expiration(expiryDate)
                 .signWith(key)

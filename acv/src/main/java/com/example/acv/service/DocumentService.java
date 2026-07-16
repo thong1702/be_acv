@@ -3,6 +3,7 @@ package com.example.acv.service;
 import com.example.acv.dto.request.DocumentRequest;
 import com.example.acv.dto.response.DocumentResponse;
 import com.example.acv.dto.response.PageResponse;
+import com.example.acv.dto.response.DocumentDownloadInfo;
 import com.example.acv.entity.Document;
 import com.example.acv.entity.User;
 import com.example.acv.exception.ResourceNotFoundException;
@@ -20,6 +21,7 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final UserService userService;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
     public List<DocumentResponse> findAll() {
@@ -36,18 +38,7 @@ public class DocumentService {
                 StringUtils.hasText(search) ? search : null,
                 pageable
         );
-
-        List<DocumentResponse> content = docPage.getContent().stream()
-                .map(this::toResponse)
-                .toList();
-
-        return new PageResponse<>(
-                content,
-                docPage.getTotalElements(),
-                docPage.getTotalPages(),
-                docPage.getSize(),
-                docPage.getNumber()
-        );
+        return PageResponse.of(docPage, this::toResponse);
     }
 
     @Transactional(readOnly = true)
@@ -78,30 +69,16 @@ public class DocumentService {
             String description) {
 
         try {
-            // Save file
-            String originalFilename = file.getOriginalFilename();
-            String fileExtension = "";
-            if (originalFilename != null && originalFilename.contains(".")) {
-                fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-            }
-            String savedFilename = java.util.UUID.randomUUID().toString() + fileExtension;
-
-            // Create uploads directory if not exists
-            java.io.File uploadDir = new java.io.File("uploads");
-            if (!uploadDir.exists()) {
-                uploadDir.mkdirs();
-            }
-
-            java.nio.file.Path filePath = java.nio.file.Paths.get("uploads", savedFilename);
-            java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            java.util.Map uploadResult = cloudinaryService.uploadDocument(file);
+            String fileUrl = uploadResult.get("secure_url").toString();
 
             String cleanExtension = "";
-            if (fileExtension.startsWith(".")) {
-                cleanExtension = fileExtension.substring(1).toUpperCase();
-            } else if (file.getContentType() != null) {
-                String contentType = file.getContentType();
-                if (contentType.contains("/")) {
-                    cleanExtension = contentType.substring(contentType.lastIndexOf("/") + 1).toUpperCase();
+            if (uploadResult.get("format") != null) {
+                cleanExtension = uploadResult.get("format").toString().toUpperCase();
+            } else {
+                String originalFilename = file.getOriginalFilename();
+                if (originalFilename != null && originalFilename.contains(".")) {
+                    cleanExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toUpperCase();
                 }
             }
             if (cleanExtension.length() > 10) {
@@ -111,7 +88,7 @@ public class DocumentService {
             Document document = Document.builder()
                     .documentNumber(docNumber)
                     .title(title)
-                    .fileUrl(savedFilename) // Save the filename or relative path
+                    .fileUrl(fileUrl)
                     .fileType(cleanExtension)
                     .fileSize(file.getSize())
                     .description(description)
@@ -121,7 +98,7 @@ public class DocumentService {
 
             return toResponse(documentRepository.save(document));
         } catch (java.io.IOException e) {
-            throw new RuntimeException("Could not store file", e);
+            throw new RuntimeException("Could not store file on Cloudinary", e);
         }
     }
 
@@ -171,48 +148,27 @@ public class DocumentService {
 
         if (file != null && !file.isEmpty()) {
             try {
-                // Delete old file if exists
-                if (document.getFileUrl() != null) {
-                    java.io.File oldFile = new java.io.File("uploads", document.getFileUrl());
-                    if (oldFile.exists()) {
-                        oldFile.delete();
-                    }
-                }
-
-                // Save new file
-                String originalFilename = file.getOriginalFilename();
-                String fileExtension = "";
-                if (originalFilename != null && originalFilename.contains(".")) {
-                    fileExtension = originalFilename.substring(originalFilename.lastIndexOf("."));
-                }
-                String savedFilename = java.util.UUID.randomUUID().toString() + fileExtension;
-
-                java.io.File uploadDir = new java.io.File("uploads");
-                if (!uploadDir.exists()) {
-                    uploadDir.mkdirs();
-                }
-
-                java.nio.file.Path filePath = java.nio.file.Paths.get("uploads", savedFilename);
-                java.nio.file.Files.copy(file.getInputStream(), filePath, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                java.util.Map uploadResult = cloudinaryService.uploadDocument(file);
+                String fileUrl = uploadResult.get("secure_url").toString();
 
                 String cleanExtension = "";
-                if (fileExtension.startsWith(".")) {
-                    cleanExtension = fileExtension.substring(1).toUpperCase();
-                } else if (file.getContentType() != null) {
-                    String contentType = file.getContentType();
-                    if (contentType.contains("/")) {
-                        cleanExtension = contentType.substring(contentType.lastIndexOf("/") + 1).toUpperCase();
+                if (uploadResult.get("format") != null) {
+                    cleanExtension = uploadResult.get("format").toString().toUpperCase();
+                } else {
+                    String originalFilename = file.getOriginalFilename();
+                    if (originalFilename != null && originalFilename.contains(".")) {
+                        cleanExtension = originalFilename.substring(originalFilename.lastIndexOf(".") + 1).toUpperCase();
                     }
                 }
                 if (cleanExtension.length() > 10) {
                     cleanExtension = cleanExtension.substring(0, 10);
                 }
 
-                document.setFileUrl(savedFilename);
+                document.setFileUrl(fileUrl);
                 document.setFileType(cleanExtension);
                 document.setFileSize(file.getSize());
             } catch (java.io.IOException e) {
-                throw new RuntimeException("Could not store file", e);
+                throw new RuntimeException("Could not store file on Cloudinary", e);
             }
         }
 
@@ -230,6 +186,52 @@ public class DocumentService {
         }
 
         return toResponse(documentRepository.save(document));
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentDownloadInfo getDownloadInfo(Long id) {
+        Document document = getEntity(id);
+        String fileUrl = document.getFileUrl();
+
+        if (fileUrl != null && fileUrl.startsWith("http")) {
+            return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
+        }
+
+        java.io.File file = new java.io.File("uploads", fileUrl);
+        if (!file.exists()) {
+            throw new ResourceNotFoundException("File not found on server");
+        }
+
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
+
+        String fileType = document.getFileType();
+        String mimeType = "application/octet-stream";
+        String fileExtension = "";
+
+        if (fileType != null) {
+            String upper = fileType.trim().toUpperCase();
+            if (upper.equals("PDF")) {
+                mimeType = "application/pdf";
+                fileExtension = ".pdf";
+            } else if (upper.equals("DOCX") || upper.equals("DOC")) {
+                mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                fileExtension = upper.equals("DOCX") ? ".docx" : ".doc";
+            } else if (upper.equals("XLSX") || upper.equals("XLS")) {
+                mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                fileExtension = upper.equals("XLSX") ? ".xlsx" : ".xls";
+            } else if (upper.equals("PNG")) {
+                mimeType = "image/png";
+                fileExtension = ".png";
+            } else if (upper.equals("JPG") || upper.equals("JPEG")) {
+                mimeType = "image/jpeg";
+                fileExtension = upper.equals("JPG") ? ".jpg" : ".jpeg";
+            } else if (upper.contains("/")) {
+                mimeType = fileType;
+            }
+        }
+
+        String downloadFilename = document.getTitle() + fileExtension;
+        return new DocumentDownloadInfo(downloadFilename, mimeType, file.length(), resource, null);
     }
 
     public void delete(Long id) {
