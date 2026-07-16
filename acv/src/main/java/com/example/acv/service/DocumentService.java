@@ -97,8 +97,8 @@ public class DocumentService {
                     .build();
 
             return toResponse(documentRepository.save(document));
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("Could not store file on Cloudinary", e);
+        } catch (Exception e) {
+            throw new com.example.acv.exception.BadRequestException("Lỗi lưu file lên Cloudinary: " + e.getMessage());
         }
     }
 
@@ -167,8 +167,8 @@ public class DocumentService {
                 document.setFileUrl(fileUrl);
                 document.setFileType(cleanExtension);
                 document.setFileSize(file.getSize());
-            } catch (java.io.IOException e) {
-                throw new RuntimeException("Could not store file on Cloudinary", e);
+            } catch (Exception e) {
+                throw new com.example.acv.exception.BadRequestException("Lỗi lưu file lên Cloudinary: " + e.getMessage());
             }
         }
 
