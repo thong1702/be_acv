@@ -3,6 +3,7 @@ services:
     image: mysql:8.0
     container_name: db_acv
     restart: unless-stopped
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
     environment:
       MYSQL_ROOT_PASSWORD: root123
       MYSQL_DATABASE: acv_db
@@ -23,7 +24,7 @@ services:
     container_name: be_acv
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://db_acv:3306/acv_db
+      SPRING_DATASOURCE_URL: jdbc:mysql://db_acv:3306/acv_db?useUnicode=true&characterEncoding=UTF-8&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: acv_user
       SPRING_DATASOURCE_PASSWORD: acv_pass
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
