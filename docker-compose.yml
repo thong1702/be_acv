@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   db_acv:
     image: mysql:8.0
@@ -43,4 +41,4 @@ volumes:
 
 networks:
   acv-network:
-    driver: bridge
+    name: acv-network
