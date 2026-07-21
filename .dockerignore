@@ -1,9 +1,7 @@
 .git
 .gitignore
 .idea
-.mvn
+acv/.mvn
 **/target
 **/bin
 *.iml
-Dockerfile
-.dockerignore

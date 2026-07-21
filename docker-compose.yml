@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: acv-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root123
+      MYSQL_DATABASE: acv_db
+      MYSQL_USER: acv_user
+      MYSQL_PASSWORD: acv_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - acv-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build: .
+    container_name: acv-backend
+    restart: unless-stopped
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/acv_db
+      SPRING_DATASOURCE_USERNAME: acv_user
+      SPRING_DATASOURCE_PASSWORD: acv_pass
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_PROFILES_ACTIVE: prod
+    ports:
+      - "8080:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - acv-network
+
+volumes:
+  mysql_data:
+
+networks:
+  acv-network:
+    driver: bridge
