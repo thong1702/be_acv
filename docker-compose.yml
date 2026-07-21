@@ -1,9 +1,9 @@
 version: '3.8'
 
 services:
-  mysql:
+  db_acv:
     image: mysql:8.0
-    container_name: acv-mysql
+    container_name: db_acv
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root123
@@ -20,12 +20,12 @@ services:
       timeout: 5s
       retries: 5
 
-  backend:
+  be_acv:
     build: .
-    container_name: acv-backend
+    container_name: be_acv
     restart: unless-stopped
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/acv_db
+      SPRING_DATASOURCE_URL: jdbc:mysql://db_acv:3306/acv_db
       SPRING_DATASOURCE_USERNAME: acv_user
       SPRING_DATASOURCE_PASSWORD: acv_pass
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
@@ -33,7 +33,7 @@ services:
     ports:
       - "8080:8080"
     depends_on:
-      mysql:
+      db_acv:
         condition: service_healthy
     networks:
       - acv-network
