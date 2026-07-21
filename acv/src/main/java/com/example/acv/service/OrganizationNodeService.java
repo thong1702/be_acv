@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class OrganizationNodeService {
 
     private final OrganizationNodeRepository organizationNodeRepository;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
     public List<OrganizationNodeResponse> getAll() {
@@ -56,6 +57,12 @@ public class OrganizationNodeService {
         node.setName(request.getName());
         node.setPosition(request.getPosition());
         node.setDescription(request.getDescription());
+        if (request.getAvatarUrl() != null) {
+            String oldAvatar = node.getAvatarUrl();
+            if (oldAvatar != null && !oldAvatar.equals(request.getAvatarUrl())) {
+                cloudinaryService.deleteFileByUrl(oldAvatar);
+            }
+        }
         node.setAvatarUrl(request.getAvatarUrl());
         node.setEmail(request.getEmail());
         node.setPhone(request.getPhone());
@@ -68,6 +75,9 @@ public class OrganizationNodeService {
     public void delete(Integer id) {
         OrganizationNode node = organizationNodeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Organization node not found with id: " + id));
+        if (node.getAvatarUrl() != null) {
+            cloudinaryService.deleteFileByUrl(node.getAvatarUrl());
+        }
         organizationNodeRepository.delete(node);
     }
 

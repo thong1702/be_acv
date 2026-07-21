@@ -91,14 +91,15 @@ public class DocumentService {
                     .fileUrl(fileUrl)
                     .fileType(cleanExtension)
                     .fileSize(file.getSize())
+                    .originalFileName(file.getOriginalFilename())
                     .description(description)
                     .issuedDate(java.time.LocalDate.parse(publishDate))
                     .status(1)
                     .build();
 
             return toResponse(documentRepository.save(document));
-        } catch (java.io.IOException e) {
-            throw new RuntimeException("Could not store file on Cloudinary", e);
+        } catch (Exception e) {
+            throw new com.example.acv.exception.BadRequestException("Lỗi lưu file lên Cloudinary: " + e.getMessage());
         }
     }
 
@@ -148,6 +149,9 @@ public class DocumentService {
 
         if (file != null && !file.isEmpty()) {
             try {
+                if (document.getFileUrl() != null) {
+                    cloudinaryService.deleteFileByUrl(document.getFileUrl());
+                }
                 java.util.Map uploadResult = cloudinaryService.uploadDocument(file);
                 String fileUrl = uploadResult.get("secure_url").toString();
 
@@ -167,8 +171,9 @@ public class DocumentService {
                 document.setFileUrl(fileUrl);
                 document.setFileType(cleanExtension);
                 document.setFileSize(file.getSize());
-            } catch (java.io.IOException e) {
-                throw new RuntimeException("Could not store file on Cloudinary", e);
+                document.setOriginalFileName(file.getOriginalFilename());
+            } catch (Exception e) {
+                throw new com.example.acv.exception.BadRequestException("Lỗi lưu file lên Cloudinary: " + e.getMessage());
             }
         }
 
@@ -194,7 +199,32 @@ public class DocumentService {
         String fileUrl = document.getFileUrl();
 
         if (fileUrl != null && fileUrl.startsWith("http")) {
-            return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
+            try {
+                org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(fileUrl);
+                String fileType = document.getFileType();
+                String mimeType = "application/octet-stream";
+                String fileExtension = "";
+
+                if (fileType != null) {
+                    String upper = fileType.trim().toUpperCase();
+                    if (upper.equals("PDF")) {
+                        mimeType = "application/pdf";
+                        fileExtension = ".pdf";
+                    } else if (upper.equals("DOCX") || upper.equals("DOC")) {
+                        mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+                        fileExtension = upper.equals("DOCX") ? ".docx" : ".doc";
+                    } else if (upper.equals("XLSX") || upper.equals("XLS")) {
+                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                        fileExtension = upper.equals("XLSX") ? ".xlsx" : ".xls";
+                    }
+                }
+
+                String downloadFilename = document.getTitle() + fileExtension;
+                long contentLength = document.getFileSize() != null ? document.getFileSize() : 0;
+                return new DocumentDownloadInfo(downloadFilename, mimeType, contentLength, resource, null);
+            } catch (Exception e) {
+                return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
+            }
         }
 
         java.io.File file = new java.io.File("uploads", fileUrl);
@@ -235,7 +265,11 @@ public class DocumentService {
     }
 
     public void delete(Long id) {
-        documentRepository.delete(getEntity(id));
+        Document document = getEntity(id);
+        if (document.getFileUrl() != null) {
+            cloudinaryService.deleteFileByUrl(document.getFileUrl());
+        }
+        documentRepository.delete(document);
     }
 
     private Document getEntity(Long id) {
@@ -259,6 +293,7 @@ public class DocumentService {
                 document.getFileUrl(),
                 document.getFileType(),
                 document.getFileSize(),
+                document.getOriginalFileName(),
                 document.getDescription(),
                 document.getIssuedDate(),
                 document.getStatus(),

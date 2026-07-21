@@ -47,6 +47,9 @@ public class Document {
     @Column(name = "file_size")
     private Long fileSize;
 
+    @Column(name = "original_file_name", length = 255)
+    private String originalFileName;
+
     @Lob
     private String description;
 

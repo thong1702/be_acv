@@ -24,6 +24,7 @@ public class PostService {
     private final PostRepository postRepository;
     private final CategoryService categoryService;
     private final UserService userService;
+    private final CloudinaryService cloudinaryService;
 
     @Transactional(readOnly = true)
     public List<PostResponse> findAll() {
@@ -75,6 +76,10 @@ public class PostService {
             post.setContent(request.getContent());
         }
         if (request.getThumbnailUrl() != null) {
+            String oldThumbnail = post.getThumbnailUrl();
+            if (oldThumbnail != null && !oldThumbnail.equals(request.getThumbnailUrl())) {
+                cloudinaryService.deleteFileByUrl(oldThumbnail);
+            }
             post.setThumbnailUrl(request.getThumbnailUrl());
         }
         if (request.getCategoryId() != null) {
@@ -119,7 +124,11 @@ public class PostService {
     }
 
     public void delete(Long id) {
-        postRepository.delete(getEntity(id));
+        Post post = getEntity(id);
+        if (post.getThumbnailUrl() != null) {
+            cloudinaryService.deleteFileByUrl(post.getThumbnailUrl());
+        }
+        postRepository.delete(post);
     }
 
     private Post getEntity(Long id) {
