@@ -198,18 +198,6 @@ public class DocumentService {
         Document document = getEntity(id);
         String fileUrl = document.getFileUrl();
 
-        // File lưu trên Cloudinary (hoặc external URL) → redirect trực tiếp
-        if (fileUrl != null && fileUrl.startsWith("http")) {
-            return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
-        }
-
-        java.io.File file = new java.io.File("uploads", fileUrl);
-        if (!file.exists()) {
-            throw new ResourceNotFoundException("File not found on server");
-        }
-
-        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
-
         String fileType = document.getFileType();
         String mimeType = "application/octet-stream";
         String fileExtension = "";
@@ -236,7 +224,34 @@ public class DocumentService {
             }
         }
 
-        String downloadFilename = document.getTitle() + fileExtension;
+        String downloadFilename = (document.getTitle() != null ? document.getTitle() : "document") + fileExtension;
+
+        // File lưu trên Cloudinary (hoặc external URL) → proxy trực tiếp để tránh lỗi 401 Unauthorized của Cloudinary
+        if (fileUrl != null && fileUrl.startsWith("http")) {
+            try {
+                java.net.URL url = new java.net.URL(fileUrl);
+                java.net.URLConnection conn = url.openConnection();
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                conn.setConnectTimeout(8000);
+                conn.setReadTimeout(15000);
+
+                try (java.io.InputStream inputStream = conn.getInputStream()) {
+                    byte[] bytes = inputStream.readAllBytes();
+                    org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(bytes);
+                    return new DocumentDownloadInfo(downloadFilename, mimeType, bytes.length, resource, null);
+                }
+            } catch (Exception e) {
+                System.err.println("Proxy fetch from Cloudinary failed, fallback redirect: " + e.getMessage());
+                return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, fileUrl);
+            }
+        }
+
+        java.io.File file = new java.io.File("uploads", fileUrl);
+        if (!file.exists()) {
+            throw new ResourceNotFoundException("File not found on server");
+        }
+
+        org.springframework.core.io.Resource resource = new org.springframework.core.io.FileSystemResource(file);
         return new DocumentDownloadInfo(downloadFilename, mimeType, file.length(), resource, null);
     }
 
