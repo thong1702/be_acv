@@ -28,6 +28,8 @@ public class CloudinaryService {
     public Map upload(MultipartFile file, String folder) throws IOException {
         String originalFilename = file.getOriginalFilename();
         String publicId = null;
+        boolean isRaw = false;
+
         if (originalFilename != null) {
             int lastDot = originalFilename.lastIndexOf('.');
             String nameWithoutExt = lastDot > 0 ? originalFilename.substring(0, lastDot) : originalFilename;
@@ -35,8 +37,8 @@ public class CloudinaryService {
             // Bỏ dấu tiếng Việt rồi thay ký tự đặc biệt bằng _
             String cleanName = removeVietnameseDiacritics(nameWithoutExt).replaceAll("[^a-zA-Z0-9_\\-.]", "_");
 
-            // For raw files (not PDFs or images), Cloudinary requires the extension in public_id
-            boolean isRaw = !extension.equals(".pdf") && !extension.equals(".png") && !extension.equals(".jpg") && !extension.equals(".jpeg");
+            // Raw files (.pdf, .docx, .xlsx, .doc) require extension in public_id and resource_type = raw
+            isRaw = extension.equals(".pdf") || (!extension.equals(".png") && !extension.equals(".jpg") && !extension.equals(".jpeg"));
             if (isRaw) {
                 publicId = cleanName + extension;
             } else {
@@ -45,7 +47,7 @@ public class CloudinaryService {
         }
 
         java.util.Map<String, Object> params = new java.util.HashMap<>();
-        params.put("resource_type", "auto");
+        params.put("resource_type", isRaw ? "raw" : "auto");
         params.put("folder", folder);
         if (publicId != null) {
             params.put("public_id", publicId);
