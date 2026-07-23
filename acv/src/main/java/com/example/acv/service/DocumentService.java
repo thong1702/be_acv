@@ -226,14 +226,19 @@ public class DocumentService {
 
         String downloadFilename = (document.getTitle() != null ? document.getTitle() : "document") + fileExtension;
 
-        // File lưu trên Cloudinary (hoặc external URL) → proxy trực tiếp để tránh lỗi 401 Unauthorized của Cloudinary
+        // File lưu trên Cloudinary (hoặc external URL) → tạo Signed URL có chữ ký xác thực API Key & Secret
         if (fileUrl != null && fileUrl.startsWith("http")) {
             try {
-                java.net.URL url = new java.net.URL(fileUrl);
+                String targetUrl = fileUrl;
+                if (fileUrl.contains("cloudinary.com")) {
+                    targetUrl = cloudinaryService.getSignedUrl(fileUrl);
+                }
+
+                java.net.URL url = new java.net.URL(targetUrl);
                 java.net.URLConnection conn = url.openConnection();
                 conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-                conn.setConnectTimeout(8000);
-                conn.setReadTimeout(15000);
+                conn.setConnectTimeout(10000);
+                conn.setReadTimeout(20000);
 
                 try (java.io.InputStream inputStream = conn.getInputStream()) {
                     byte[] bytes = inputStream.readAllBytes();
@@ -241,8 +246,9 @@ public class DocumentService {
                     return new DocumentDownloadInfo(downloadFilename, mimeType, bytes.length, resource, null);
                 }
             } catch (Exception e) {
-                System.err.println("Proxy fetch from Cloudinary failed, fallback redirect: " + e.getMessage());
-                return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, fileUrl);
+                System.err.println("Proxy fetch from Cloudinary failed, fallback signed redirect: " + e.getMessage());
+                String signed = cloudinaryService.getSignedUrl(fileUrl);
+                return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, signed);
             }
         }
 

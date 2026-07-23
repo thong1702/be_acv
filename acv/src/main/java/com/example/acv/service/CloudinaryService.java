@@ -97,4 +97,38 @@ public class CloudinaryService {
             System.err.println("Failed to delete file from Cloudinary: " + e.getMessage());
         }
     }
+
+    public String getSignedUrl(String fileUrl) {
+        if (fileUrl == null || !fileUrl.contains("cloudinary.com")) {
+            return fileUrl;
+        }
+        try {
+            int uploadIndex = fileUrl.indexOf("/upload/");
+            if (uploadIndex == -1) return fileUrl;
+
+            String resourceType = "raw";
+            if (fileUrl.contains("/image/upload/")) {
+                resourceType = "image";
+            } else if (fileUrl.contains("/video/upload/")) {
+                resourceType = "video";
+            }
+
+            String afterUpload = fileUrl.substring(uploadIndex + 8);
+            if (afterUpload.startsWith("v")) {
+                int firstSlash = afterUpload.indexOf('/');
+                if (firstSlash != -1) {
+                    afterUpload = afterUpload.substring(firstSlash + 1);
+                }
+            }
+
+            return cloudinary.url()
+                    .resourceType(resourceType)
+                    .type("upload")
+                    .signed(true)
+                    .generate(afterUpload);
+        } catch (Exception e) {
+            System.err.println("Error generating Cloudinary signed URL: " + e.getMessage());
+            return fileUrl;
+        }
+    }
 }
