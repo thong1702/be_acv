@@ -32,7 +32,12 @@ public class ContactService {
         ContactRequest saved = contactRepository.save(request);
 
         // Kích hoạt gửi email thông báo tự động (bất đồng bộ)
-        emailService.sendContactNotificationEmail(saved);
+        try {
+            emailService.sendContactNotificationEmail(saved);
+        } catch (Exception e) {
+            // Log lỗi nhưng vẫn trả về kết quả thành công cho client
+            System.err.println("Lỗi khi gửi email thông báo: " + e.getMessage());
+        }
 
         return saved;
     }
