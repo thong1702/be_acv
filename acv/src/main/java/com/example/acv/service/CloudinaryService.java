@@ -15,6 +15,16 @@ public class CloudinaryService {
 
     private final Cloudinary cloudinary;
 
+    /**
+     * Chuyển tiếng Việt có dấu sang không dấu
+     */
+    private String removeVietnameseDiacritics(String input) {
+        if (input == null) return "";
+        String normalized = java.text.Normalizer.normalize(input, java.text.Normalizer.Form.NFD);
+        return normalized.replaceAll("\\p{InCombiningDiacriticalMarks}+", "")
+                         .replace("đ", "d").replace("Đ", "D");
+    }
+
     public Map upload(MultipartFile file, String folder) throws IOException {
         String originalFilename = file.getOriginalFilename();
         String publicId = null;
@@ -22,14 +32,15 @@ public class CloudinaryService {
             int lastDot = originalFilename.lastIndexOf('.');
             String nameWithoutExt = lastDot > 0 ? originalFilename.substring(0, lastDot) : originalFilename;
             String extension = lastDot > 0 ? originalFilename.substring(lastDot).toLowerCase() : "";
-            String cleanName = nameWithoutExt.replaceAll("[^a-zA-Z0-9_-]", "_");
-            
+            // Bỏ dấu tiếng Việt rồi thay ký tự đặc biệt bằng _
+            String cleanName = removeVietnameseDiacritics(nameWithoutExt).replaceAll("[^a-zA-Z0-9_\\-.]", "_");
+
             // For raw files (not PDFs or images), Cloudinary requires the extension in public_id
             boolean isRaw = !extension.equals(".pdf") && !extension.equals(".png") && !extension.equals(".jpg") && !extension.equals(".jpeg");
             if (isRaw) {
-                publicId = cleanName + "_" + System.currentTimeMillis() + extension;
+                publicId = cleanName + extension;
             } else {
-                publicId = cleanName + "_" + System.currentTimeMillis();
+                publicId = cleanName;
             }
         }
 

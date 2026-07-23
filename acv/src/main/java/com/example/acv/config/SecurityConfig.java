@@ -45,6 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/documents/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/organization-nodes/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/company-info/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/contact/submit").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/contact/pending-count").permitAll()
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
                         .requestMatchers("/api/**").hasAnyRole("ADMIN", "EDITOR")
                         .anyRequest().authenticated()
@@ -56,8 +58,8 @@ public class SecurityConfig {
     @Bean
     org.springframework.web.cors.CorsConfigurationSource corsConfigurationSource() {
         org.springframework.web.cors.CorsConfiguration configuration = new org.springframework.web.cors.CorsConfiguration();
-        configuration.setAllowedOrigins(java.util.List.of("http://localhost:4200", "https://fe-acv.onrender.com"));
-        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedOriginPatterns(java.util.List.of("*"));
+        configuration.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
         configuration.setAllowedHeaders(java.util.List.of("*"));
         configuration.setAllowCredentials(true);
         org.springframework.web.cors.UrlBasedCorsConfigurationSource source = new org.springframework.web.cors.UrlBasedCorsConfigurationSource();

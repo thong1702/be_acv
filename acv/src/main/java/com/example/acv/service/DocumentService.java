@@ -198,33 +198,9 @@ public class DocumentService {
         Document document = getEntity(id);
         String fileUrl = document.getFileUrl();
 
+        // File lưu trên Cloudinary (hoặc external URL) → redirect trực tiếp
         if (fileUrl != null && fileUrl.startsWith("http")) {
-            try {
-                org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(fileUrl);
-                String fileType = document.getFileType();
-                String mimeType = "application/octet-stream";
-                String fileExtension = "";
-
-                if (fileType != null) {
-                    String upper = fileType.trim().toUpperCase();
-                    if (upper.equals("PDF")) {
-                        mimeType = "application/pdf";
-                        fileExtension = ".pdf";
-                    } else if (upper.equals("DOCX") || upper.equals("DOC")) {
-                        mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
-                        fileExtension = upper.equals("DOCX") ? ".docx" : ".doc";
-                    } else if (upper.equals("XLSX") || upper.equals("XLS")) {
-                        mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                        fileExtension = upper.equals("XLSX") ? ".xlsx" : ".xls";
-                    }
-                }
-
-                String downloadFilename = document.getTitle() + fileExtension;
-                long contentLength = document.getFileSize() != null ? document.getFileSize() : 0;
-                return new DocumentDownloadInfo(downloadFilename, mimeType, contentLength, resource, null);
-            } catch (Exception e) {
-                return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
-            }
+            return new DocumentDownloadInfo(null, null, 0, null, fileUrl);
         }
 
         java.io.File file = new java.io.File("uploads", fileUrl);
