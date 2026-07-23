@@ -68,6 +68,7 @@ public class CloudinaryService {
         return this.upload(file, "acv/documents");
     }
 
+
     public void deleteFileByUrl(String url) {
         if (url == null || !url.contains("cloudinary.com")) {
             return;
@@ -134,55 +135,54 @@ public class CloudinaryService {
 
     /**
      * Tải file từ Cloudinary về dạng byte[].
-     * Dùng Cloudinary privateDownload() để tạo URL có chữ ký hợp lệ,
-     * sau đó tải về server-side để bypass 401 Unauthorized.
+     * Dùng Signed CDN URL (res.cloudinary.com/s--SIGNATURE--/) để bypass 401.
+     * Cloudinary /raw/download Admin API endpoint không tồn tại nên không dùng privateDownload.
      */
     public byte[] downloadFileBytes(String fileUrl) {
         if (fileUrl == null) return null;
         try {
-            // Phân tích resource_type và public_id từ URL
+            // Xác định resource_type
             String resourceType = "raw";
             if (fileUrl.contains("/image/upload/")) resourceType = "image";
             else if (fileUrl.contains("/video/upload/")) resourceType = "video";
 
-            // Trích xuất public_id + extension từ URL
             int uploadIdx = fileUrl.indexOf("/upload/");
             if (uploadIdx == -1) return downloadFromUrl(fileUrl);
 
-            String afterUpload = fileUrl.substring(uploadIdx + 8);
-            // Bỏ version (vXXXXXX/)
-            if (afterUpload.matches("v\\d+/.*")) {
-                afterUpload = afterUpload.substring(afterUpload.indexOf('/') + 1);
-            }
-            // afterUpload bây giờ là: acv/documents/TB_1626.pdf
-            String publicId = afterUpload;
-            String format = null;
-            if (!resourceType.equals("raw")) {
-                int dotIdx = afterUpload.lastIndexOf('.');
-                if (dotIdx > 0) {
-                    format = afterUpload.substring(dotIdx + 1);
-                    publicId = afterUpload.substring(0, dotIdx);
-                }
+            // afterUploadRaw bao gồm version: "v1784780569/acv/documents/TB_1626.pdf"
+            String afterUploadRaw = fileUrl.substring(uploadIdx + 8);
+
+            // Trích xuất version nếu có
+            String version = null;
+            String afterUpload = afterUploadRaw;
+            if (afterUploadRaw.matches("v\\d+/.*")) {
+                int slashIdx = afterUploadRaw.indexOf('/');
+                version = afterUploadRaw.substring(1, slashIdx); // "1784780569"
+                afterUpload = afterUploadRaw.substring(slashIdx + 1); // "acv/documents/TB_1626.pdf"
             }
 
-            // Tạo private download URL có chữ ký hợp lệ (sử dụng API Key + API Secret)
-            String signedUrl = cloudinary.url()
+            // Tạo Signed CDN URL có version → res.cloudinary.com/cloud/raw/upload/s--SIG--/vXXX/publicId
+            com.cloudinary.Url urlBuilder = cloudinary.url()
                     .resourceType(resourceType)
                     .type("upload")
-                    .signed(true)
-                    .generate(afterUpload);
+                    .secure(true)
+                    .signed(true);
+            if (version != null) urlBuilder = urlBuilder.version(version);
+            String signedUrl = urlBuilder.generate(afterUpload);
 
             byte[] result = downloadFromUrl(signedUrl);
             if (result != null) return result;
 
-            // Thử lại với privateDownload
-            @SuppressWarnings("unchecked")
-            String privateUrl = cloudinary.privateDownload(publicId, format,
-                    ObjectUtils.asMap("resource_type", resourceType));
-            return downloadFromUrl(privateUrl);
+            // Fallback: thử lại với image/download (chỉ cho image/video không phải raw)
+            if (!resourceType.equals("raw")) {
+                @SuppressWarnings("unchecked")
+                String privateUrl = cloudinary.privateDownload(afterUpload, null,
+                        ObjectUtils.asMap("resource_type", resourceType));
+                return downloadFromUrl(privateUrl);
+            }
 
+            return null;
         } catch (Exception e) {
-            System.err.println("downloadFileBytes error: " + e.getMessage());
             return null;
         }
     }
@@ -200,10 +200,8 @@ public class CloudinaryService {
                     return is.readAllBytes();
                 }
             }
-            System.err.println("downloadFromUrl HTTP " + code + " for: " + url);
             return null;
         } catch (Exception e) {
-            System.err.println("downloadFromUrl error: " + e.getMessage());
             return null;
         }
     }

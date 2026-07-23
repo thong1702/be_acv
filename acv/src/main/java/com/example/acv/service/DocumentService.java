@@ -233,9 +233,7 @@ public class DocumentService {
                 org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(bytes);
                 return new DocumentDownloadInfo(downloadFilename, mimeType, bytes.length, resource, null);
             }
-            // Fallback nếu không lấy được bytes
-            String signed = cloudinaryService.getSignedUrl(fileUrl);
-            return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, signed);
+            return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, null);
         }
 
         java.io.File file = new java.io.File("uploads", fileUrl);
