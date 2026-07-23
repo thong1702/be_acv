@@ -41,10 +41,9 @@ public class DocumentController {
             @RequestParam(value = "inline", defaultValue = "false") boolean inline) {
         DocumentDownloadInfo info = documentService.getDownloadInfo(id);
 
-        if (info.getRedirectUrl() != null) {
-            return ResponseEntity.status(HttpStatus.FOUND)
-                    .location(java.net.URI.create(info.getRedirectUrl()))
-                    .build();
+        if (info.getResource() == null) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Không thể tải file, vui lòng thử lại.");
         }
 
         String disposition = inline ? "inline" : "attachment";

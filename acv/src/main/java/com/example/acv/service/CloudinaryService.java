@@ -132,45 +132,80 @@ public class CloudinaryService {
         }
     }
 
+    /**
+     * Tải file từ Cloudinary về dạng byte[].
+     * Dùng Cloudinary privateDownload() để tạo URL có chữ ký hợp lệ,
+     * sau đó tải về server-side để bypass 401 Unauthorized.
+     */
     public byte[] downloadFileBytes(String fileUrl) {
         if (fileUrl == null) return null;
         try {
-            String apiKey = cloudinary.config.apiKey;
-            String apiSecret = cloudinary.config.apiSecret;
-            String targetUrl = getSignedUrl(fileUrl);
+            // Phân tích resource_type và public_id từ URL
+            String resourceType = "raw";
+            if (fileUrl.contains("/image/upload/")) resourceType = "image";
+            else if (fileUrl.contains("/video/upload/")) resourceType = "video";
 
-            java.net.URL url = new java.net.URL(targetUrl);
-            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-            conn.setConnectTimeout(10000);
-            conn.setReadTimeout(20000);
+            // Trích xuất public_id + extension từ URL
+            int uploadIdx = fileUrl.indexOf("/upload/");
+            if (uploadIdx == -1) return downloadFromUrl(fileUrl);
 
-            if (apiKey != null && apiSecret != null) {
-                String auth = apiKey + ":" + apiSecret;
-                String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+            String afterUpload = fileUrl.substring(uploadIdx + 8);
+            // Bỏ version (vXXXXXX/)
+            if (afterUpload.matches("v\\d+/.*")) {
+                afterUpload = afterUpload.substring(afterUpload.indexOf('/') + 1);
             }
-
-            int responseCode = conn.getResponseCode();
-            if (responseCode == java.net.HttpURLConnection.HTTP_MOVED_TEMP || responseCode == java.net.HttpURLConnection.HTTP_MOVED_PERM) {
-                String newUrl = conn.getHeaderField("Location");
-                if (newUrl != null) {
-                    conn = (java.net.HttpURLConnection) new java.net.URL(newUrl).openConnection();
-                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-                    if (apiKey != null && apiSecret != null) {
-                        String auth = apiKey + ":" + apiSecret;
-                        String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
-                        conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
-                    }
+            // afterUpload bây giờ là: acv/documents/TB_1626.pdf
+            String publicId = afterUpload;
+            String format = null;
+            if (!resourceType.equals("raw")) {
+                int dotIdx = afterUpload.lastIndexOf('.');
+                if (dotIdx > 0) {
+                    format = afterUpload.substring(dotIdx + 1);
+                    publicId = afterUpload.substring(0, dotIdx);
                 }
             }
 
-            try (java.io.InputStream is = conn.getInputStream()) {
-                return is.readAllBytes();
-            }
+            // Tạo private download URL có chữ ký hợp lệ (sử dụng API Key + API Secret)
+            String signedUrl = cloudinary.url()
+                    .resourceType(resourceType)
+                    .type("upload")
+                    .signed(true)
+                    .generate(afterUpload);
+
+            byte[] result = downloadFromUrl(signedUrl);
+            if (result != null) return result;
+
+            // Thử lại với privateDownload
+            @SuppressWarnings("unchecked")
+            String privateUrl = cloudinary.privateDownload(publicId, format,
+                    ObjectUtils.asMap("resource_type", resourceType));
+            return downloadFromUrl(privateUrl);
+
         } catch (Exception e) {
-            System.err.println("Error downloading file bytes from Cloudinary: " + e.getMessage());
+            System.err.println("downloadFileBytes error: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private byte[] downloadFromUrl(String url) {
+        try {
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) new java.net.URL(url).openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(30000);
+            conn.setInstanceFollowRedirects(true);
+            int code = conn.getResponseCode();
+            if (code >= 200 && code < 300) {
+                try (java.io.InputStream is = conn.getInputStream()) {
+                    return is.readAllBytes();
+                }
+            }
+            System.err.println("downloadFromUrl HTTP " + code + " for: " + url);
+            return null;
+        } catch (Exception e) {
+            System.err.println("downloadFromUrl error: " + e.getMessage());
             return null;
         }
     }
 }
+
