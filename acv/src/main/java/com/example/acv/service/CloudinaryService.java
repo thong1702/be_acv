@@ -131,4 +131,46 @@ public class CloudinaryService {
             return fileUrl;
         }
     }
+
+    public byte[] downloadFileBytes(String fileUrl) {
+        if (fileUrl == null) return null;
+        try {
+            String apiKey = cloudinary.config.apiKey;
+            String apiSecret = cloudinary.config.apiSecret;
+            String targetUrl = getSignedUrl(fileUrl);
+
+            java.net.URL url = new java.net.URL(targetUrl);
+            java.net.HttpURLConnection conn = (java.net.HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+            conn.setConnectTimeout(10000);
+            conn.setReadTimeout(20000);
+
+            if (apiKey != null && apiSecret != null) {
+                String auth = apiKey + ":" + apiSecret;
+                String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+            }
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == java.net.HttpURLConnection.HTTP_MOVED_TEMP || responseCode == java.net.HttpURLConnection.HTTP_MOVED_PERM) {
+                String newUrl = conn.getHeaderField("Location");
+                if (newUrl != null) {
+                    conn = (java.net.HttpURLConnection) new java.net.URL(newUrl).openConnection();
+                    conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
+                    if (apiKey != null && apiSecret != null) {
+                        String auth = apiKey + ":" + apiSecret;
+                        String encodedAuth = java.util.Base64.getEncoder().encodeToString(auth.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                        conn.setRequestProperty("Authorization", "Basic " + encodedAuth);
+                    }
+                }
+            }
+
+            try (java.io.InputStream is = conn.getInputStream()) {
+                return is.readAllBytes();
+            }
+        } catch (Exception e) {
+            System.err.println("Error downloading file bytes from Cloudinary: " + e.getMessage());
+            return null;
+        }
+    }
 }

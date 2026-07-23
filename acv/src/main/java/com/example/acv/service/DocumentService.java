@@ -226,30 +226,16 @@ public class DocumentService {
 
         String downloadFilename = (document.getTitle() != null ? document.getTitle() : "document") + fileExtension;
 
-        // File lưu trên Cloudinary (hoặc external URL) → tạo Signed URL có chữ ký xác thực API Key & Secret
+        // File lưu trên Cloudinary (hoặc external URL) → proxy trực tiếp dữ liệu nhị phân về Backend
         if (fileUrl != null && fileUrl.startsWith("http")) {
-            try {
-                String targetUrl = fileUrl;
-                if (fileUrl.contains("cloudinary.com")) {
-                    targetUrl = cloudinaryService.getSignedUrl(fileUrl);
-                }
-
-                java.net.URL url = new java.net.URL(targetUrl);
-                java.net.URLConnection conn = url.openConnection();
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64)");
-                conn.setConnectTimeout(10000);
-                conn.setReadTimeout(20000);
-
-                try (java.io.InputStream inputStream = conn.getInputStream()) {
-                    byte[] bytes = inputStream.readAllBytes();
-                    org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(bytes);
-                    return new DocumentDownloadInfo(downloadFilename, mimeType, bytes.length, resource, null);
-                }
-            } catch (Exception e) {
-                System.err.println("Proxy fetch from Cloudinary failed, fallback signed redirect: " + e.getMessage());
-                String signed = cloudinaryService.getSignedUrl(fileUrl);
-                return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, signed);
+            byte[] bytes = cloudinaryService.downloadFileBytes(fileUrl);
+            if (bytes != null && bytes.length > 0) {
+                org.springframework.core.io.ByteArrayResource resource = new org.springframework.core.io.ByteArrayResource(bytes);
+                return new DocumentDownloadInfo(downloadFilename, mimeType, bytes.length, resource, null);
             }
+            // Fallback nếu không lấy được bytes
+            String signed = cloudinaryService.getSignedUrl(fileUrl);
+            return new DocumentDownloadInfo(downloadFilename, mimeType, 0, null, signed);
         }
 
         java.io.File file = new java.io.File("uploads", fileUrl);
