@@ -18,5 +18,13 @@ public class OrganizationNodeResponse {
     private Integer orderIndex;
     private Integer parentId;
     private String parentName;
+    private String degree;
+    private Integer experienceYears;
+    private String gender;
+    private Integer birthYear;
+    private String certificateNo;
+    private String personnelGroup;
+    private String workHistory;
+    private String keyExperience;
     private LocalDateTime updatedAt;
 }

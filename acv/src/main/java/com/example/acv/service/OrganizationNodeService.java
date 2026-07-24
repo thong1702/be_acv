@@ -45,6 +45,14 @@ public class OrganizationNodeService {
                 .phone(request.getPhone())
                 .orderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex())
                 .parentId(request.getParentId())
+                .degree(request.getDegree())
+                .experienceYears(request.getExperienceYears())
+                .gender(request.getGender())
+                .birthYear(request.getBirthYear())
+                .certificateNo(request.getCertificateNo())
+                .personnelGroup(request.getPersonnelGroup())
+                .workHistory(request.getWorkHistory())
+                .keyExperience(request.getKeyExperience())
                 .build();
 
         return toResponse(organizationNodeRepository.save(node));
@@ -68,6 +76,14 @@ public class OrganizationNodeService {
         node.setPhone(request.getPhone());
         node.setOrderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex());
         node.setParentId(request.getParentId());
+        node.setDegree(request.getDegree());
+        node.setExperienceYears(request.getExperienceYears());
+        node.setGender(request.getGender());
+        node.setBirthYear(request.getBirthYear());
+        node.setCertificateNo(request.getCertificateNo());
+        node.setPersonnelGroup(request.getPersonnelGroup());
+        node.setWorkHistory(request.getWorkHistory());
+        node.setKeyExperience(request.getKeyExperience());
 
         return toResponse(organizationNodeRepository.save(node));
     }
@@ -93,6 +109,14 @@ public class OrganizationNodeService {
                 node.getOrderIndex(),
                 node.getParentId(),
                 null,
+                node.getDegree(),
+                node.getExperienceYears(),
+                node.getGender(),
+                node.getBirthYear(),
+                node.getCertificateNo(),
+                node.getPersonnelGroup(),
+                node.getWorkHistory(),
+                node.getKeyExperience(),
                 node.getUpdatedAt()
         );
     }

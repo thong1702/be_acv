@@ -55,6 +55,30 @@ public class OrganizationNode {
     @Column(name = "parent_id")
     private Integer parentId;
 
+    @Column(length = 255)
+    private String degree;
+
+    @Column(name = "experience_years")
+    private Integer experienceYears;
+
+    @Column(length = 10)
+    private String gender;
+
+    @Column(name = "birth_year")
+    private Integer birthYear;
+
+    @Column(name = "certificate_no", length = 100)
+    private String certificateNo;
+
+    @Column(name = "personnel_group", length = 50)
+    private String personnelGroup;
+
+    @Column(name = "work_history", columnDefinition = "TEXT")
+    private String workHistory;
+
+    @Column(name = "key_experience", columnDefinition = "TEXT")
+    private String keyExperience;
+
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 

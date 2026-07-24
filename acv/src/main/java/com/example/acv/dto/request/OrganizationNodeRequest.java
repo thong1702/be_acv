@@ -33,4 +33,24 @@ public class OrganizationNodeRequest {
     private Integer orderIndex;
 
     private Integer parentId;
+
+    @Size(max = 255)
+    private String degree;
+
+    private Integer experienceYears;
+
+    @Size(max = 10)
+    private String gender;
+
+    private Integer birthYear;
+
+    @Size(max = 100)
+    private String certificateNo;
+
+    @Size(max = 50)
+    private String personnelGroup;
+
+    private String workHistory;
+
+    private String keyExperience;
 }
