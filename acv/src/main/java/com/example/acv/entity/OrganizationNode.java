@@ -52,9 +52,6 @@ public class OrganizationNode {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex;
 
-    @Column(name = "parent_id")
-    private Integer parentId;
-
     @Column(length = 255)
     private String degree;
 

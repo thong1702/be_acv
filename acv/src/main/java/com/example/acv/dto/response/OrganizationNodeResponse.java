@@ -16,8 +16,6 @@ public class OrganizationNodeResponse {
     private String email;
     private String phone;
     private Integer orderIndex;
-    private Integer parentId;
-    private String parentName;
     private String degree;
     private Integer experienceYears;
     private String gender;

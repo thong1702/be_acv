@@ -44,7 +44,6 @@ public class OrganizationNodeService {
                 .email(request.getEmail())
                 .phone(request.getPhone())
                 .orderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex())
-                .parentId(request.getParentId())
                 .degree(request.getDegree())
                 .experienceYears(request.getExperienceYears())
                 .gender(request.getGender())
@@ -75,7 +74,6 @@ public class OrganizationNodeService {
         node.setEmail(request.getEmail());
         node.setPhone(request.getPhone());
         node.setOrderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex());
-        node.setParentId(request.getParentId());
         node.setDegree(request.getDegree());
         node.setExperienceYears(request.getExperienceYears());
         node.setGender(request.getGender());
@@ -107,8 +105,6 @@ public class OrganizationNodeService {
                 node.getEmail(),
                 node.getPhone(),
                 node.getOrderIndex(),
-                node.getParentId(),
-                null,
                 node.getDegree(),
                 node.getExperienceYears(),
                 node.getGender(),

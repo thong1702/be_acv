@@ -32,8 +32,6 @@ public class OrganizationNodeRequest {
 
     private Integer orderIndex;
 
-    private Integer parentId;
-
     @Size(max = 255)
     private String degree;
 
