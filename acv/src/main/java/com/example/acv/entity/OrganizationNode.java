@@ -52,7 +52,7 @@ public class OrganizationNode {
     @Column(name = "order_index", nullable = false)
     private Integer orderIndex;
 
-    @Column(length = 255)
+    @Column(columnDefinition = "TEXT")
     private String degree;
 
     @Column(name = "experience_years")

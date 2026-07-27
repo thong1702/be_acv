@@ -32,7 +32,6 @@ public class OrganizationNodeRequest {
 
     private Integer orderIndex;
 
-    @Size(max = 255)
     private String degree;
 
     private Integer experienceYears;
