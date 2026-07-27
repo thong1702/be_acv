@@ -58,7 +58,7 @@ public class Document {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer status = 1;
+    private Integer status = Integer.valueOf(1);
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by")

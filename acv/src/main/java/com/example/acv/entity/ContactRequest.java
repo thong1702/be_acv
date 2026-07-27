@@ -32,7 +32,7 @@ public class ContactRequest {
 
     @Builder.Default
     @Column(nullable = false)
-    private Integer status = 0; // 0: Chưa phản hồi, 1: Đã phản hồi
+    private Integer status = Integer.valueOf(0); // 0: Chưa phản hồi, 1: Đã phản hồi
 
     @Builder.Default
     @Column(nullable = false)
@@ -44,7 +44,7 @@ public class ContactRequest {
             createdAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         }
         if (status == null) {
-            status = 0;
+            status = Integer.valueOf(0);
         }
     }
 }

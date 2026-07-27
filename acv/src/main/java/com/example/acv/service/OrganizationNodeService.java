@@ -43,7 +43,7 @@ public class OrganizationNodeService {
                 .avatarUrl(request.getAvatarUrl())
                 .email(request.getEmail())
                 .phone(request.getPhone())
-                .orderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex())
+                .orderIndex(request.getOrderIndex() == null ? Integer.valueOf(0) : request.getOrderIndex())
                 .degree(request.getDegree())
                 .experienceYears(request.getExperienceYears())
                 .gender(request.getGender())
@@ -73,7 +73,7 @@ public class OrganizationNodeService {
         node.setAvatarUrl(request.getAvatarUrl());
         node.setEmail(request.getEmail());
         node.setPhone(request.getPhone());
-        node.setOrderIndex(request.getOrderIndex() == null ? 0 : request.getOrderIndex());
+        node.setOrderIndex(request.getOrderIndex() == null ? Integer.valueOf(0) : request.getOrderIndex());
         node.setDegree(request.getDegree());
         node.setExperienceYears(request.getExperienceYears());
         node.setGender(request.getGender());

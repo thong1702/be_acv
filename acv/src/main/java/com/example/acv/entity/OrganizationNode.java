@@ -83,7 +83,7 @@ public class OrganizationNode {
     void onCreate() {
         updatedAt = LocalDateTime.now();
         if (orderIndex == null) {
-            orderIndex = 0;
+            orderIndex = Integer.valueOf(0);
         }
     }
 

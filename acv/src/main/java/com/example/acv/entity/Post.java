@@ -55,11 +55,11 @@ public class Post {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer status = 1;
+    private Integer status = Integer.valueOf(1);
 
     @Column(name = "view_count", nullable = false)
     @Builder.Default
-    private Integer viewCount = 0;
+    private Integer viewCount = Integer.valueOf(0);
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by")

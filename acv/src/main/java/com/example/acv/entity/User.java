@@ -49,7 +49,7 @@ public class User {
 
     @Column(nullable = false)
     @Builder.Default
-    private Integer status = 1;
+    private Integer status = Integer.valueOf(1);
 
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
