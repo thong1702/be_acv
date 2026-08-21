@@ -1,9 +1,30 @@
 spring:
   datasource:
-    generate-unique-name: true
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MySQL
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
   jpa:
     hibernate:
       ddl-auto: create-drop
     properties:
       hibernate:
         dialect: org.hibernate.dialect.H2Dialect
+  mail:
+    host: localhost
+    port: 25
+    username: test@example.com
+
+cloudinary:
+  cloud-name: test
+  api-key: test
+  api-secret: test
+
+app:
+  mail:
+    target-email: test@example.com
+  jwt:
+    secret: 9a614bf3c990b793751ad88219488a0e8d0e7f7bb100c8b6a3b2b8c9d1e2f3a45a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f3a45a6b7c8d9e0f1a2b3c4d5e6f7
+    expiration-ms: 86400000
+    refresh-expiration-ms: 604800000
+

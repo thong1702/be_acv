@@ -33,9 +33,9 @@ spring:
             enable: true
 
 cloudinary:
-  cloud-name: anreyesu
-  api-key: 892988216292772
-  api-secret: VGEtWCWvp1w6Kq6eB4guCNnfkDg
+  cloud-name: iyz3l8fv
+  api-key: 581176762699528
+  api-secret: zF0D6iwmg8Vu6_kR13rD9G0A8bE
 
 app:
   mail:
