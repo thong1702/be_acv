@@ -60,6 +60,20 @@ public class PostService {
                 .category(resolveCategory(request.getCategoryId()))
                 .createdBy(resolveUser(request.getCreatedById()))
                 .build();
+
+        if (request.getSubImages() != null && !request.getSubImages().isEmpty()) {
+            int order = 0;
+            for (String imgUrl : request.getSubImages()) {
+                if (StringUtils.hasText(imgUrl)) {
+                    post.getImages().add(com.example.acv.entity.PostImage.builder()
+                            .imageUrl(imgUrl)
+                            .displayOrder(order++)
+                            .post(post)
+                            .build());
+                }
+            }
+        }
+
         return toResponse(postRepository.save(post));
     }
 
@@ -81,6 +95,24 @@ public class PostService {
                 cloudinaryService.deleteFileByUrl(oldThumbnail);
             }
             post.setThumbnailUrl(request.getThumbnailUrl());
+        }
+        if (request.getSubImages() != null) {
+            List<String> newUrls = request.getSubImages().stream().filter(StringUtils::hasText).toList();
+            // Xóa ảnh cũ không còn trong danh sách mới khỏi cloudinary
+            post.getImages().stream()
+                    .map(com.example.acv.entity.PostImage::getImageUrl)
+                    .filter(oldUrl -> !newUrls.contains(oldUrl))
+                    .forEach(cloudinaryService::deleteFileByUrl);
+
+            post.getImages().clear();
+            int order = 0;
+            for (String imgUrl : newUrls) {
+                post.getImages().add(com.example.acv.entity.PostImage.builder()
+                        .imageUrl(imgUrl)
+                        .displayOrder(order++)
+                        .post(post)
+                        .build());
+            }
         }
         if (request.getCategoryId() != null) {
             post.setCategory(resolveCategory(request.getCategoryId()));
@@ -128,6 +160,9 @@ public class PostService {
         if (post.getThumbnailUrl() != null) {
             cloudinaryService.deleteFileByUrl(post.getThumbnailUrl());
         }
+        if (post.getImages() != null) {
+            post.getImages().forEach(img -> cloudinaryService.deleteFileByUrl(img.getImageUrl()));
+        }
         postRepository.delete(post);
     }
 
@@ -172,6 +207,9 @@ public class PostService {
     private PostResponse toResponse(Post post) {
         Category category = post.getCategory();
         User createdBy = post.getCreatedBy();
+        List<String> subImages = post.getImages() != null
+                ? post.getImages().stream().map(com.example.acv.entity.PostImage::getImageUrl).toList()
+                : java.util.Collections.emptyList();
         return new PostResponse(
                 post.getId(),
                 post.getTitle(),
@@ -187,7 +225,8 @@ public class PostService {
                 createdBy == null ? null : createdBy.getId(),
                 createdBy == null ? null : createdBy.getUsername(),
                 post.getCreatedAt(),
-                post.getUpdatedAt()
+                post.getUpdatedAt(),
+                subImages
         );
     }
 }

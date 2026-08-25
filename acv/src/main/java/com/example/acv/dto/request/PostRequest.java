@@ -27,6 +27,8 @@ public class PostRequest {
     @Size(max = 555)
     private String thumbnailUrl;
 
+    private java.util.List<String> subImages;
+
     @Positive
     private Long categoryId;
 

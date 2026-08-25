@@ -25,12 +25,14 @@ public class PostResponse {
 
     // Frontend compatibility fields
     private String thumbnail;
+    private java.util.List<String> subImages;
     private CategoryDto category;
     private UserDto user;
 
     public PostResponse(Long id, String title, String slug, String summary, String content, String thumbnailUrl,
                         Long categoryId, String categoryName, String categorySlug, Integer status, Integer viewCount,
-                        Long createdById, String createdByUsername, LocalDateTime createdAt, LocalDateTime updatedAt) {
+                        Long createdById, String createdByUsername, LocalDateTime createdAt, LocalDateTime updatedAt,
+                        java.util.List<String> subImages) {
         this.id = id;
         this.title = title;
         this.slug = slug;
@@ -46,6 +48,7 @@ public class PostResponse {
         this.createdByUsername = createdByUsername;
         this.createdAt = createdAt;
         this.updatedAt = updatedAt;
+        this.subImages = subImages != null ? subImages : java.util.Collections.emptyList();
 
         // Populate compatibility fields
         this.thumbnail = thumbnailUrl;
